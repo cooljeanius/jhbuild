@@ -19,16 +19,19 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import os
+import logging
 
-from jhbuild.utils import packagedb
+from jhbuild.utils import trigger
+from jhbuild.utils import cmds
 from jhbuild.errors import FatalError, CommandError, SkipToPhase, SkipToEnd
 
 class BuildScript:
-    def __init__(self, config, module_list=None):
+    def __init__(self, config, module_list=None, module_set=None):
         if self.__class__ is BuildScript:
             raise NotImplementedError('BuildScript is an abstract base class')
 
         self.modulelist = module_list
+        self.moduleset = module_set
         self.module_num = 0
 
         self.config = config
@@ -55,14 +58,23 @@ class BuildScript:
             if not os.access(self.config.copy_dir, os.R_OK|os.W_OK|os.X_OK):
                 raise FatalError(_('checkout copy dir (%s) must be writable') % self.config.copy_dir)
 
-        packagedbdir = os.path.join(self.config.prefix, 'share', 'jhbuild')
-        try:
-            if not os.path.isdir(packagedbdir):
-                os.makedirs(packagedbdir)
-        except OSError:
-            raise FatalError(_('could not create directory %s') % packagedbdir)
-        self.packagedb = packagedb.PackageDB(os.path.join(packagedbdir,
-                                                          'packagedb.xml'))
+        self.subprocess_nice_args = []
+        if config.nice_build:
+            if cmds.has_command('chrt'):
+                self.subprocess_nice_args.extend(['chrt', '--idle', '0'])
+            elif cmds.has_command('nice'):
+                self.subprocess_nice_args.append('nice')
+                
+            if cmds.has_command('ionice'):
+                self.subprocess_nice_args.extend(['ionice', '-c', '3', '-t'])
+
+    def _prepare_execute(self, command):
+        if self.subprocess_nice_args:
+            if isinstance(command, (str, unicode)):
+                command = ' '.join(self.subprocess_nice_args) + ' ' + command
+            else:
+                command = self.subprocess_nice_args + command
+        return command
 
     def execute(self, command, hint=None, cwd=None, extra_env=None):
         '''Executes the given command.
@@ -77,12 +89,13 @@ class BuildScript:
         self.start_build()
         
         failures = [] # list of modules that couldn't be built
+        successes = []
         self.module_num = 0
         for module in self.modulelist:
             self.module_num = self.module_num + 1
 
             if self.config.min_age is not None:
-                installdate = self.packagedb.installdate(module.name)
+                installdate = self.moduleset.packagedb.installdate(module.name)
                 if installdate > self.config.min_age:
                     self.message(_('Skipping %s (installed recently)') % module.name)
                     continue
@@ -93,7 +106,7 @@ class BuildScript:
                 if dep in failures:
                     if self.config.module_nopoison.get(dep,
                                                        self.config.nopoison):
-                        self.message(_('module %(mod)s will be build even though %(dep)s failed')
+                        self.message(_('module %(mod)s will be built even though %(dep)s failed')
                                      % { 'mod':module.name, 'dep':dep })
                     else:
                         self.message(_('module %(mod)s not built due to non buildable %(dep)s')
@@ -189,11 +202,51 @@ class BuildScript:
                     force_phase = False
                     num_phase += 1
 
+            if not failed:
+                self.run_triggers(module.name)
+
             self.end_module(module.name, failed)
+
         self.end_build(failures)
         if failures:
             return 1
         return 0
+
+    def run_triggers(self, module_name):
+        """See triggers/README."""
+        assert 'JHBUILD_PREFIX' in os.environ
+        if PKGDATADIR is not None:
+            trigger_path = os.path.join(PKGDATADIR, 'triggers')
+        else:
+            trigger_path = os.path.join(SRCDIR, 'triggers')
+        all_triggers = trigger.load_all(trigger_path)
+        triggers_to_run = []
+        for trig in all_triggers:
+            # Skip if somehow the module isn't really installed
+            if self.moduleset.packagedb.installdate(module_name) is None:
+                continue
+            pkg = self.moduleset.packagedb.get(module_name)
+            assert pkg is not None
+
+            # Skip this if the packagedb doesn't have a manifest; this
+            # can happen with old packagedb.xml files.
+            if pkg.manifest is None:
+                continue
+
+            if trig.matches(pkg.manifest):
+                triggers_to_run.append(trig)
+        for trig in triggers_to_run:
+            logging.info(_('Running post-installation trigger script: %r') % (trig.name, ))
+            try:
+                self.execute(trig.command())
+            except CommandError, err:
+                if isinstance(trig.command(), (str, unicode)):
+                    displayed_command = trig.command()
+                else:
+                    displayed_command = ' '.join(trig.command())
+                logging.error(_('%(command)s returned with an error code '
+                                '(%(rc)s)') % {'command' : displayed_command,
+                                               'rc' : err.returncode})
 
     def get_build_phases(self, module, targets=None):
         '''returns the list of required phases'''

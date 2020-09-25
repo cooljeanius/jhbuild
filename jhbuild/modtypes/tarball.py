@@ -27,7 +27,7 @@ try:
 except ImportError:
     hashlib = None
 
-from jhbuild.modtypes import register_module_type, get_dependencies
+from jhbuild.modtypes import register_module_type, get_dependencies, find_first_child_node_content
 
 def parse_tarball(node, config, uri, repositories, default_repo):
     name = node.getAttribute('id')
@@ -98,11 +98,16 @@ def parse_tarball(node, config, uri, repositories, default_repo):
             source_size, source_hash, None)
     branch.patches = patches
 
-    return AutogenModule(name, branch,
-            autogenargs, makeargs, makeinstallargs,
-            dependencies, after, suggests,
-            supports_non_srcdir_builds = supports_non_srcdir_builds,
-            skip_autogen = False, autogen_sh = 'configure',
-            makefile = makefile)
+    instance = AutogenModule(name, branch,
+                             autogenargs, makeargs, makeinstallargs,
+                             supports_non_srcdir_builds = supports_non_srcdir_builds,
+                             skip_autogen = False, autogen_sh = 'configure',
+                             makefile = makefile)
+    instance.dependencies = dependencies
+    instance.after = after
+    instance.suggests = suggests
+    instance.pkg_config = find_first_child_node_content(node, 'pkg-config')
+
+    return instance
 
 register_module_type('tarball', parse_tarball)

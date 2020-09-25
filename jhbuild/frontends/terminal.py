@@ -28,7 +28,7 @@ from jhbuild.frontends import buildscript
 from jhbuild.utils import cmds
 from jhbuild.utils import trayicon
 from jhbuild.utils import notify
-from jhbuild.errors import CommandError
+from jhbuild.errors import CommandError, FatalError
 
 term = os.environ.get('TERM', '')
 is_xterm = term.find('xterm') >= 0 or term == 'rxvt'
@@ -80,11 +80,11 @@ class TerminalBuildScript(buildscript.BuildScript):
     triedcheckout = None
     is_end_of_build = False
 
-    def __init__(self, config, module_list):
-        buildscript.BuildScript.__init__(self, config, module_list)
+    def __init__(self, config, module_list, module_set=None):
+        buildscript.BuildScript.__init__(self, config, module_list, module_set=module_set)
         self.trayicon = trayicon.TrayIcon(config)
         self.notify = notify.Notify(config)
-
+        
     def message(self, msg, module_num=-1):
         '''Display a message to the user'''
         
@@ -147,14 +147,33 @@ class TerminalBuildScript(buildscript.BuildScript):
         kws = {
             'close_fds': True
             }
+        print_args = {'cwd': ''}
+        if cwd:
+            print_args['cwd'] = cwd
+        else:
+            try:
+                print_args['cwd'] = os.getcwd()
+            except OSError:
+                pass
+
         if isinstance(command, (str, unicode)):
             kws['shell'] = True
-            pretty_command = command
+            print_args['command'] = command
         else:
-            pretty_command = ' '.join(command)
+            print_args['command'] = ' '.join(command)
 
         if not self.config.quiet_mode:
-            print pretty_command
+            if self.config.print_command_pattern:
+                try:
+                    print self.config.print_command_pattern % print_args
+                except TypeError, e:
+                    raise FatalError('\'print_command_pattern\' %s' % e)
+                except KeyError, e:
+                    raise FatalError(_('%(configuration_variable)s invalid key'
+                                       ' %(key)s' % \
+                                       {'configuration_variable' :
+                                            '\'print_command_pattern\'',
+                                        'key' : e}))
 
         kws['stdin'] = subprocess.PIPE
         if hint in ('cvs', 'svn', 'hg-update.py'):
@@ -174,6 +193,8 @@ class TerminalBuildScript(buildscript.BuildScript):
         if extra_env is not None:
             kws['env'] = os.environ.copy()
             kws['env'].update(extra_env)
+
+        command = self._prepare_execute(command)
 
         try:
             p = subprocess.Popen(command, **kws)
@@ -231,12 +252,15 @@ class TerminalBuildScript(buildscript.BuildScript):
             if p.wait() != 0:
                 if self.config.quiet_mode:
                     print ''.join(output)
-                raise CommandError(_('########## Error running %s') % pretty_command)
+                raise CommandError(_('########## Error running %s')
+                                   % print_args['command'], p.returncode)
         except OSError:
             # it could happen on a really badly-timed ctrl-c (see bug 551641)
-            raise CommandError(_('########## Error running %s') % pretty_command)
+            raise CommandError(_('########## Error running %s')
+                               % print_args['command'])
 
     def start_phase(self, module, phase):
+        self.notify.clear()
         self.trayicon.set_icon(os.path.join(icondir,
                                phase_map.get(phase, 'build.png')))
 

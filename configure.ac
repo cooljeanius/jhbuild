@@ -1,20 +1,30 @@
 dnl# configure.ac                                  -*- Autoconf -*-
 dnl# Process this file with autoconf to produce a configure script.
 
-AC_INIT([jhbuild],[2.32.4],
-        [http://bugzilla.gnome.org/enter_bug.cgi?product=jhbuild])
+AC_INIT([jhbuild],[2.32.4.1],
+        [http://bugzilla.gnome.org/enter_bug.cgi?product=jhbuild],[jhbuild])
 AC_CONFIG_SRCDIR([jhbuild/main.py])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
-AM_INIT_AUTOMAKE([-Wno-portability])
+AM_INIT_AUTOMAKE([1.11.3 -Wno-portability foreign tar-ustar dist-xz])
 GNOME_COMMON_INIT
 AM_MAINTAINER_MODE
 AC_PREFIX_DEFAULT([~/.local/])dnl
 
+AM_MAINTAINER_MODE([enable])
+
+# Check for programs
+AC_PROG_CC
 AM_PATH_PYTHON
+PKG_PROG_PKG_CONFIG
 
 # i18n
-GETTEXT_PACKAGE="jhbuild"
+IT_PROG_INTLTOOL([0.40.0])
+
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.17])
+
+GETTEXT_PACKAGE=AC_PACKAGE_TARNAME
 AC_SUBST([GETTEXT_PACKAGE])
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["${GETTEXT_PACKAGE}"],[Gettext package])
 AM_GLIB_GNU_GETTEXT
@@ -49,8 +59,11 @@ GNOME_DOC_INIT
 AC_CONFIG_FILES([
 	Makefile
 	doc/Makefile
+	examples/jhbuild.desktop
 	po/Makefile.in
 	scripts/Makefile
+	triggers/Makefile
+	jhbuild.desktop.in
 	jhbuild/Makefile
 	jhbuild/buildbot/Makefile
 	jhbuild/buildbot/status/web/Makefile

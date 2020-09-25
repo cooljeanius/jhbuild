@@ -56,6 +56,14 @@ def get_git_extra_env():
     return { 'LD_LIBRARY_PATH': os.environ.get('UNMANGLED_LD_LIBRARY_PATH'),
              'PATH': os.environ.get('UNMANGLED_PATH')}
 
+def get_git_mirror_directory(mirror_root, checkoutdir, module):
+    """Calculate the mirror directory from the arguments and return it."""
+    mirror_dir = os.path.join(mirror_root, checkoutdir or
+            os.path.basename(module))
+    if mirror_dir.endswith('.git'):
+        return mirror_dir
+    else:
+        return mirror_dir + '.git'
 
 class GitUnknownBranchNameError(Exception):
     pass
@@ -84,7 +92,8 @@ class GitRepository(Repository):
 
         mirror_module = None
         if self.config.dvcs_mirror_dir:
-            mirror_module = os.path.join(self.config.dvcs_mirror_dir, module)
+            mirror_module = get_git_mirror_directory(
+                    self.config.dvcs_mirror_dir, checkoutdir, module)
 
         # allow remapping of branch for module, it supports two modes of
         # operation
@@ -166,8 +175,11 @@ class GitBranch(Branch):
         return True
 
     def is_local_branch(self, branch):
-        return self.execute_git_predicate( ['git', 'show-ref', '--quiet',
-                '--verify', 'refs/heads/' + branch])
+        is_local_head = self.execute_git_predicate( ['git', 'show-ref', '--quiet',
+                                                     '--verify', 'refs/heads/' + branch])
+        if is_local_head:
+            return True
+        return self.execute_git_predicate(['git', 'rev-parse', branch])
 
     def is_inside_work_tree(self):
         return self.execute_git_predicate(
@@ -365,17 +377,17 @@ class GitBranch(Branch):
         if self.config.nonetwork:
             return
 
-        mirror_dir = os.path.join(self.config.dvcs_mirror_dir,
-                self.get_module_basename() + '.git')
+        # Calculate anew in case a configuration reload changed the mirror root.
+        mirror_dir = get_git_mirror_directory(self.config.dvcs_mirror_dir,
+                self.checkoutdir, self.unmirrored_module)
 
         if os.path.exists(mirror_dir):
             buildscript.execute(['git', 'fetch'], cwd=mirror_dir,
                     extra_env=get_git_extra_env())
         else:
             buildscript.execute(
-                    ['git', 'clone', '--mirror', self.unmirrored_module],
-                    cwd=self.config.dvcs_mirror_dir,
-                    extra_env=get_git_extra_env())
+                    ['git', 'clone', '--mirror', self.unmirrored_module,
+                    mirror_dir], extra_env=get_git_extra_env())
 
     def _checkout(self, buildscript, copydir=None):
 
@@ -407,6 +419,12 @@ class GitBranch(Branch):
             if os.path.exists(os.path.join(cwd, '.svn')):
                 raise CommandError(_('Failed to update module as it switched to git (you should check for changes then remove the directory).'))
             raise CommandError(_('Failed to update module (missing .git) (you should check for changes then remove the directory).'))
+
+        buildscript.execute(['git', 'remote', 'set-url', 'origin',
+                self.module], **git_extra_args)
+
+        buildscript.execute(['git', 'remote', 'update', 'origin'],
+                **git_extra_args)
 
         if update_mirror:
             self.update_dvcs_mirror(buildscript)

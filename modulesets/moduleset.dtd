@@ -1,4 +1,4 @@
-<!ELEMENT moduleset (repository|include|autotools|metamodule|tarball|distutils|perl|linux|testmodule|cvsroot|cvsmodule|waf)+>
+<!ELEMENT moduleset (repository|include|autotools|metamodule|tarball|distutils|perl|linux|testmodule|cvsroot|cvsmodule|waf|cmake)+>
 <!ATTLIST moduleset
 	name     CDATA  #IMPLIED>
 
@@ -80,7 +80,7 @@
 <!ELEMENT cmake (branch?,dependencies?,after?)>
 <!ATTLIST cmake
 	id		CDATA	#REQUIRED
-	cmakeargs	CDATA	#IMPLIED>
+	cmakeargs	CDATA	#IMPLIED
 	makeargs	CDATA	#IMPLIED>
 
 <!ELEMENT perl (branch?,dependencies?,after?)>

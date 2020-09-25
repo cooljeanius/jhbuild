@@ -27,7 +27,7 @@ import errno
 
 from jhbuild.errors import FatalError, BuildStateError
 from jhbuild.modtypes import \
-     Package, get_dependencies, get_branch, register_module_type
+     Package, register_module_type
 
 __all__ = [ 'LinuxModule' ]
 
@@ -62,10 +62,8 @@ class LinuxModule(Package):
     PHASE_HEADERS_INSTALL = 'headers_install'
     PHASE_INSTALL         = 'install'
 
-    def __init__(self, name, branch, kconfigs, makeargs,
-            dependencies, after, suggests):
-        Package.__init__(self, name, dependencies, after, suggests)
-        self.branch = branch
+    def __init__(self, name, branch=None, kconfigs=None, makeargs=None):
+        Package.__init__(self, name, branch=branch)
         self.kconfigs = kconfigs
         self.makeargs = makeargs
 
@@ -74,9 +72,6 @@ class LinuxModule(Package):
 
     def get_builddir(self, buildscript):
         return self.get_srcdir(buildscript)
-
-    def get_revision(self):
-        return self.branch.branchname
 
     def skip_checkout(self, buildscript, last_phase):
         # skip the checkout stage if the nonetwork flag is set
@@ -217,7 +212,9 @@ class LinuxModule(Package):
                     buildscript.config.prefix)
             buildscript.execute(cmd, cwd = self.branch.srcdir,
                     extra_env = self.extra_env)
-        buildscript.packagedb.add(self.name, self.get_revision() or '')
+        buildscript.moduleset.packagedb.add(self.name,
+                                            self.get_revision() or '',
+                                            self.get_destdir(buildscript))
 
     do_headers_install.depends = [PHASE_BUILD]
     do_headers_install.error_phases = [PHASE_FORCE_CHECKOUT, PHASE_CONFIGURE]
@@ -245,12 +242,14 @@ def get_kconfigs(node, repositories, default_repo):
             try:
                 repo = repositories[repo_name]
             except KeyError:
-                raise FatalError(_('Repository=%s not found for kconfig in linux id=%s. Possible repositories are %s') % (repo_name, id, repositories))
+                raise FatalError(_('Repository=%(missing)s not found for kconfig in linux id=%(linux_id)s. Possible repositories are %(possible)s'
+                                    % {'missing': repo_name, 'linux_id': id, 'possible': repositories}))
         else:
             try:
                 repo = repositories[default_repo]
             except KeyError:
-                raise FatalError(_('Default Repository=%s not found for kconfig in module id=%s. Possible repositories are %s') % (default_repo, id, repositories))
+                raise FatalError(_('Default repository=%(missing)s not found for kconfig in linux id=%(linux_id)s. Possible repositories are %(possible)s'
+                                   % {'missing': default_repo, 'linux_id': id, 'possible': repositories}))
 
         branch = repo.branch_from_xml(id, childnode, repositories, default_repo)
 
@@ -284,7 +283,6 @@ def parse_linux(node, config, uri, repositories, default_repo):
     branch = get_branch(node, repositories, default_repo, config)
     kconfigs = get_kconfigs(node, repositories, default_repo)
 
-    return LinuxModule(id, branch, kconfigs,
-                       makeargs, dependencies, after, suggests)
+    return LinuxModule(id, branch, dependencies, after, suggests, kconfigs, makeargs)
 
 register_module_type('linux', parse_linux)

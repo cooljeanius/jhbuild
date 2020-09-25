@@ -73,7 +73,9 @@
 
   <autotools id="autoconf" autogen-sh="configure">
     <branch repo="ftp.gnu.org"
-            module="autoconf/autoconf-2.68.tar.bz2" version="2.68"/>
+            module="autoconf/autoconf-2.68.tar.bz2" version="2.68"
+            size="1381988" md5sum="864d785215aa60d627c91fcb21b05b07"
+            hash="sha256:c491fb273fd6d4ca925e26ceed3d177920233c76d542b150ff35e571454332c8" />
     <dependencies>
       <dep package="m4"/>
     </dependencies>
@@ -84,25 +86,17 @@
             module="libtool/libtool-2.4.tar.gz" version="2.4"/>
   </autotools>
 
-  <autotools id="automake-1.8" autogen-sh="configure">
-    <branch repo="ftp.gnu.org"
-            module="automake/automake-1.8.5.tar.bz2" version="1.8.5"
-            size="663182" md5sum="0114aa6d7dc32112834b68105fb8d7e2" />
-  </autotools>
-  <autotools id="automake-1.9" autogen-sh="configure">
-    <branch repo="ftp.gnu.org"
-            module="automake/automake-1.9.6.tar.bz2" version="1.9.6"
-            size="765505" md5sum="c11b8100bb311492d8220378fd8bf9e0" />
-  </autotools>
   <autotools id="automake-1.10" autogen-sh="configure">
     <branch repo="ftp.gnu.org"
             module="automake/automake-1.10.3.tar.bz2" version="1.10.3"
             size="957505" md5sum="b8e67fb458da396bc35555af7ef2b49f" />
   </autotools>
-  <autotools id="automake-1.11" autogen-sh="configure">
+
+  <autotools id="automake" autogen-sh="configure">
     <branch repo="ftp.gnu.org"
-	    module="automake/automake-1.11.1.tar.bz2" version="1.11.1"
-	    size="1066685" md5sum="c2972c4d9b3e29c03d5f2af86249876f" />
+            module="automake/automake-1.11.3.tar.xz" version="1.11.3"
+            hash="sha256:f9e0be260c24ef61223fe961ba830fe46afc421fc0edf3864dbc88b5de36a529"
+            size="1076640"/>
   </autotools>
 
 <!-- Pkg-config 0.26 and later requires glib, which requires
@@ -123,6 +117,29 @@
   <autotools id="flex" autogen-sh="configure">
     <branch repo="sourceforge" module="flex/flex-2.5.35.tar.bz2"
 	    version="2.5.35"/>
+  <autotools id="python" autogenargs="--enable-shared" autogen-sh="configure">
+    <pkg-config>python-2.7.pc</pkg-config>
+    <branch repo="python"
+            module="2.7.2/Python-2.7.2.tar.xz"
+            version="2.7.2"
+            hash="sha256:5d1e184869304431da59d065fe0cfe19718ed014f026bb28277dd2180f39961c"
+            size="9936152">
+    </branch>
+  </autotools>
+
+  <autotools id="guile">
+    <pkg-config>guile-2.0.pc</pkg-config>
+    <branch repo="ftp.gnu.org"
+            module="guile/guile-2.0.3.tar.xz"
+            version="2.0.3"
+            hash="sha256:d2ebcd78dc587080b96d9120053a57d8e2d22c3d54a444dff06513d5fba53093"
+            size="4196064"/>
+  </autotools>
+
+  <autotools id="xz">
+    <branch repo="tukaani.org" module="xz/xz-5.0.1.tar.bz2" version="5.0.1"
+            size="1005959" md5sum="cb6c7a58cec4d663a395c54d186ca0c6"
+            hash="sha256:9b380f502d37085a60821484a3a13747454638927cc36033be64970512451ed8"/>
   </autotools>
 
   <metamodule id="meta-bootstrap">
@@ -134,10 +151,7 @@
       <dep package="m4"/>	<!-- Can be skipped for Leopard and later -->
       <dep package="autoconf" />
       <dep package="libtool" />
-      <dep package="automake-1.8" />
-      <dep package="automake-1.9" />
-      <dep package="automake-1.10" />
-      <dep package="automake-1.11" />
+      <dep package="automake" />
       <dep package="pkg-config" />
       <dep package="bison"/>   <!-- included for Tiger, skipped otherwise -->
       <dep package="flex"/>    <!-- included for Tiger, skipped otherwise -->

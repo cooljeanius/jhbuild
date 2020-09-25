@@ -81,8 +81,8 @@ class AutobuildBuildScript(buildscript.BuildScript, TerminalBuildScript):
     xmlrpc_report_url = None
     verbose = False
 
-    def __init__(self, config, module_list):
-        buildscript.BuildScript.__init__(self, config, module_list)
+    def __init__(self, config, module_list, module_set=None):
+        buildscript.BuildScript.__init__(self, config, module_list, module_set=module_set)
         self.xmlrpc_report_url = config.autobuild_report_url
         self.verbose = config.verbose
         self.server = None
@@ -171,6 +171,8 @@ class AutobuildBuildScript(buildscript.BuildScript, TerminalBuildScript):
         if extra_env is not None:
             kws['env'] = os.environ.copy()
             kws['env'].update(extra_env)
+
+        command = self._prepare_execute(command)
 
         try:
             p = subprocess.Popen(command, **kws)

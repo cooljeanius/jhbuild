@@ -75,7 +75,7 @@ class cmd_update(Command):
         config.build_targets = ['checkout']
         config.nonetwork = False
 
-        build = jhbuild.frontends.get_buildscript(config, module_list)
+        build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
         return build.build()
 
 register_command(cmd_update)
@@ -109,7 +109,7 @@ class cmd_updateone(Command):
         config.build_targets = ['checkout']
         config.nonetwork = False
 
-        build = jhbuild.frontends.get_buildscript(config, module_list)
+        build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
         return build.build()
 
 register_command(cmd_updateone)
@@ -145,7 +145,7 @@ class cmd_cleanone(Command):
                     _('clean command called while makeclean is set to False, skipped.'))
             return 0
 
-        build = jhbuild.frontends.get_buildscript(config, module_list)
+        build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
         return build.build(phases=['clean'])
 
 register_command(cmd_cleanone)
@@ -160,7 +160,7 @@ def check_bootstrap_updateness(config):
     except:
         # failed to get bootstrap moduleset, silently ignore.
         return
-    packagedb = jhbuild.frontends.get_buildscript(config, []).packagedb
+    packagedb = module_set.packagedb
 
     max_install_date = max([
             packagedb.installdate(module.name)
@@ -173,9 +173,10 @@ def check_bootstrap_updateness(config):
 
     updated_modules = []
     for module in module_set.modules.values():
-        if not packagedb.entries.has_key(module.name):
+        pkg = packagedb.get(module.name)
+        if pkg is None:
             continue
-        p_version = packagedb.entries.get(module.name)[0]
+        p_version = pkg.version
         if p_version != module.get_revision():
             updated_modules.append(module.name)
 
@@ -209,8 +210,8 @@ class cmd_build(Command):
     def __init__(self):
         Command.__init__(self, [
             make_option('-a', '--autogen',
-                        action='store_true', dest='autogen', default=False,
-                        help=_('always run autogen.sh')),
+                        action='store_true', dest='_unused', default=False,
+                        help=_('This option does nothing anymore')),
             make_option('-c', '--clean',
                         action='store_true', dest='clean', default=False,
                         help=_('run make clean before make')),
@@ -288,7 +289,7 @@ class cmd_build(Command):
                     _('requested module is in the ignore list, nothing to do.'))
             return 0
 
-        build = jhbuild.frontends.get_buildscript(config, module_list)
+        build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
         return build.build()
 
 register_command(cmd_build)
@@ -303,8 +304,8 @@ class cmd_buildone(Command):
     def __init__(self):
         Command.__init__(self, [
             make_option('-a', '--autogen',
-                        action='store_true', dest='autogen', default=False,
-                        help=_('always run autogen.sh')),
+                        action='store_true', dest='_unused', default=False,
+                        help=_('This option does nothing anymore')),
             make_option('-c', '--clean',
                         action='store_true', dest='clean', default=False,
                         help=_('run make clean before make')),
@@ -362,11 +363,10 @@ class cmd_buildone(Command):
         if not module_list:
             self.parser.error(_('This command requires a module parameter.'))
 
-        build = jhbuild.frontends.get_buildscript(config, module_list)
+        build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
         return build.build()
 
 register_command(cmd_buildone)
-
 
 class cmd_run(Command):
     doc = N_('Run a command under the JHBuild environment')
@@ -406,7 +406,7 @@ class cmd_run(Command):
             except KeyError, e:
                 raise FatalError(_("A module called '%s' could not be found.") % e)
 
-            build = jhbuild.frontends.get_buildscript(config, module_list)
+            build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
             builddir = module_list[0].get_builddir(build)
             try:
                 build.execute(args, cwd=builddir)
@@ -423,7 +423,7 @@ class cmd_run(Command):
             except KeyError, e:
                 raise FatalError(_("A module called '%s' could not be found.") % e)
 
-            build = jhbuild.frontends.get_buildscript(config, module_list)
+            build = jhbuild.frontends.get_buildscript(config, module_list, module_set=module_set)
             checkoutdir = module_list[0].get_srcdir(build)
             try:
                 build.execute(args, cwd=checkoutdir)

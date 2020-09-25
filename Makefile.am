@@ -1,4 +1,6 @@
-SUBDIRS = po scripts jhbuild buildbot
+ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
+
+SUBDIRS = po scripts triggers jhbuild buildbot
 
 ACLOCAL_AMFLAGS = --install -I build-aux
 
@@ -22,6 +24,7 @@ INTLTOOL = 			\
 
 EXTRA_DIST = gnome-doc-utils.make $(PATCHES) $(MODULESETS) \
 	install-check.c \
+	autogen.sh \
 	$(desktop_in_files) $(INTLTOOL)
 
 DISTCLEANFILES = 		\
