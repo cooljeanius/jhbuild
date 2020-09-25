@@ -1,0 +1,20 @@
+# Tell GitHub to ignore when calculating language stats:
+aclocal.m4 linguist-vendored
+build-aux/compile linguist-vendored
+build-aux/config.guess linguist-vendored
+build-aux/config.sub linguist-vendored
+build-aux/depcomp linguist-vendored
+build-aux/glib-gettext.m4 linguist-vendored
+build-aux/install-sh linguist-vendored
+build-aux/intltool.m4 linguist-vendored
+build-aux/missing linguist-vendored
+build-aux/nls.m4 linguist-vendored
+build-aux/pkg.m4 linguist-vendored
+build-aux/py-compile linguist-vendored
+config.guess linguist-vendored
+config.sub linguist-vendored
+mkinstalldirs linguist-vendored
+py-compile linguist-vendored
+
+# Gnulib's git-merge-changelog driver:
+ChangeLog    merge=cl-merge

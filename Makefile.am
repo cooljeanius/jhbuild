@@ -1,5 +1,7 @@
 SUBDIRS = po scripts jhbuild buildbot
 
+ACLOCAL_AMFLAGS = --install -I build-aux
+
 if DOC_INSTALLATION_ENABLED
 SUBDIRS += doc
 endif
