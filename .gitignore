@@ -1,5 +1,7 @@
 *.[ao]
 *.l[ao]
+*.log
+*~
 *.py[co]
 .deps/
 .libs/
@@ -37,7 +39,7 @@ mo/
 /mkinstalldirs
 /omf.make
 /po/*.gmo
-/po/.intltool-merge-cache
+/po/.intltool-merge-cache*
 /po/Makefile.in.in
 /po/Makevars.template
 /po/POTFILES

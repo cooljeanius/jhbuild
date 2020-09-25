@@ -1,0 +1,44 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ([2.69.185-b502e])
+AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
+AC_CONFIG_SRCDIR([install-check.c])
+AC_CONFIG_HEADERS([config.h])
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+# Checks for libraries.
+
+# Checks for header files.
+AC_CHECK_HEADERS([unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_PID_T
+
+# Checks for library functions.
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([strrchr])
+
+AC_CONFIG_FILES([Makefile
+                 buildbot/Makefile
+                 doc/Makefile
+                 jhbuild/Makefile
+                 jhbuild/buildbot/Makefile
+                 jhbuild/buildbot/status/Makefile
+                 jhbuild/buildbot/status/web/Makefile
+                 jhbuild/commands/Makefile
+                 jhbuild/cut_n_paste/Makefile
+                 jhbuild/frontends/Makefile
+                 jhbuild/modtypes/Makefile
+                 jhbuild/utils/Makefile
+                 jhbuild/versioncontrol/Makefile
+                 scripts/Makefile])
+AC_CONFIG_SUBDIRS([tests/autotools
+                   tests/hello
+                   tests/libhello])
+AC_OUTPUT

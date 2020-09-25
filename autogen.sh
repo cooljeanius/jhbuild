@@ -33,9 +33,12 @@
 
 PKG_NAME=jhbuild
 
-srcdir=`dirname $0`
-test -z "$srcdir" && srcdir=.
-test -z "$MAKE" && MAKE=make
+export srcdir=`dirname $0`
+test -z "$srcdir" && export srcdir=.
+
+export MY_PKG_NAME=jhbuild
+
+test -z "$MAKE" && export MAKE=make
 
 setup_i18n()
 {
@@ -156,6 +159,23 @@ configure_with_autotools()
   REQUIRED_PKG_CONFIG_VERSION=0.16.0 \
   USE_COMMON_DOC_BUILD=yes gnome-autogen.sh $@
 }
+
+touch $srcdir/ChangeLog # required for automake
+
+REQUIRED_AUTOCONF_VERSION=2.57 \
+REQUIRED_AUTOMAKE_VERSION=1.8 \
+REQUIRED_INTLTOOL_VERSION=0.35.0 \
+REQUIRED_PKG_CONFIG_VERSION=0.16.0 \
+	gnome-autogen.sh $@
+if test "$?" != "0"
+then
+        cat << _EOF_
+
+Note that autotools are only required to build documentation;
+type make -f Makefile.plain to build or install JHBuild without
+the documentation
+_EOF_
+fi
 
 # Check for make. make is required to provide i18n for this script and to
 # build and install JHBuild
