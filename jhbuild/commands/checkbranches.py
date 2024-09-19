@@ -52,7 +52,9 @@ class cmd_checkbranches(Command):
                 continue
             if not mod.branch or not mod.branch.repository.__class__.__name__ == 'GitRepository':
                 continue
-            if not 'git.gnome.org' in mod.branch.repository.href:
+            from urllib.parse import urlparse
+            parsed_url = urlparse(mod.branch.repository.href)
+            if parsed_url.hostname != 'git.gnome.org':
                 continue
             if mod.branch.branch:
                 # there is already a branch defined
